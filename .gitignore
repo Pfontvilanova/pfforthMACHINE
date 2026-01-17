@@ -1,0 +1,49 @@
+# Verilog/FPGA Build Artifacts
+*. bit
+*.bin
+*.fs
+*.cfg
+*.jed
+*.svf
+*.rbt
+
+# Synthesis Output
+build/
+output/
+synthesis/
+*. ise
+*.xise
+
+# Simulation
+sim/
+*.vvp
+*.vcd
+*.fst
+*.gtkw
+
+# Tool Generated Files
+*. o
+*.a
+*.so
+*.pyc
+__pycache__/
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Project Files
+*.log
+*.rpt
+*.twr
+*.twx
+*.par
+*.unroutes
+
+# Dependencies
+vendor/
+node_modules/
