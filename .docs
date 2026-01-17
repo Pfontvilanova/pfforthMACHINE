@@ -1,0 +1,220 @@
+# PFForth Machine - Hardware Architecture
+
+## Overview
+
+The PFForth Machine is a pure hardware implementation of a Forth stack machine with asynchronous execution. Unlike traditional CPUs that rely on a global clock, this design uses handshake protocols and asynchronous logic to execute instructions sequentially.
+
+## Core Architecture
+
+### 1. Stack System
+
+#### Data Stack (TOS - Top of Stack)
+- **Size**: 32 cells
+- **Width**: 32-bit words
+- **Access**: Push/Pop operations
+- **Asynchronous**: Ready/Valid handshaking
+
+```
+┌─────────────────┐
+│   Cell 31       │  ← SP (Stack Pointer)
+├─────────────────┤
+│   Cell 30       │
+├─────────────────┤
+│   ...            │
+├─────────────────┤
+│   Cell 1        │
+├─────────────────┤
+│   Cell 0        │  ← Bottom
+└─────────────────┘
+```
+
+#### Return Stack
+- **Size**: 32 cells
+- **Width**: 32-bit addresses
+- **Purpose**: Store return addresses and loop counters
+- **Asynchronous**: Ready/Valid handshaking
+
+### 2. Memory System
+
+```
+┌────────────────────────────────┐
+│   Flash Memory (512 KB)        │
+│   Program Code & Constants     │
+├────────────────────────────────┤
+│   RAM (250 KB)                 │
+│   ├─ Data Stack Area           │
+│   ├─ Return Stack Area         │
+│   ├─ User Variables            │
+│   └─ General Purpose RAM       │
+└────────────────────────────────┘
+```
+
+### 3. Instruction Fetch & Execution
+
+```
+┌─────────────────────────────┐
+│   Program Counter (PC)      │
+└──────────────┬──────────────┘
+               │
+               ▼
+        ┌─────────────┐
+        │ Instruction │
+        │  Memory     │
+        └──────┬──────┘
+               │
+               ▼
+        ┌──────────────────┐
+        │ Instruction      │
+        │ Decode & Route   │
+        └────────┬─────────┘
+                 │
+         ┌───────┴──────────┐
+         ▼                  ▼
+    ┌─────────┐      ┌────────────┐
+    │ Primitive│     │ Control    │
+    │Execute   │     │ Flow       │
+    └─────────┘     └────────────┘
+         │                  │
+         └───────┬──────────┘
+                 ▼
+        ┌─────────────────┐
+        │ Next Instruction│
+        └─────────────────┘
+```
+
+### 4. Asynchronous Execution Model
+
+Unlike synchronous designs with a global clock, the PFForth Machine uses:
+
+- **Ready/Valid Handshaking**: Each unit signals when it's ready and when data is valid
+- **Combinatorial Paths**: Results available immediately after inputs settle
+- **Pipeline Stages**: May be asynchronous or lightly clocked depending on requirements
+
+```
+Producer                    Consumer
+   │                           │
+   ├─► [data_valid] ──────────►│
+   ├─► [data] ────────────────►│
+   │◄─ [ready] ─────────────────┤
+   │                           │
+```
+
+### 5. Primitive Execution
+
+Each primitive is a hardware module that:
+1. Reads from Data Stack and/or Return Stack
+2. Performs operation (combinatorial or pipelined)
+3. Writes results back to stacks
+4. Signals completion/validity
+
+## Hardware Primitives
+
+The machine will implement approximately 30 primitives across categories:
+
+### Stack Operations
+- `DUP`: Duplicate top of stack
+- `DROP`: Remove top of stack
+- `SWAP`: Exchange top two elements
+- `ROT`: Rotate top three elements
+- `OVER`: Copy second element to top
+- `DEPTH`: Get stack depth
+
+### Arithmetic
+- `+`: Addition
+- `-`: Subtraction
+- `*`: Multiplication
+- `/`: Division
+- `MOD`: Modulo
+- `ABS`: Absolute value
+- `NEGATE`: Negate
+
+### Bitwise Logic
+- `AND`: Bitwise AND
+- `OR`: Bitwise OR
+- `XOR`: Bitwise XOR
+- `NOT`: Bitwise NOT
+- `<<`: Left shift
+- `>>`: Right shift
+
+### Memory
+- `@`: Fetch from memory
+- `!`: Store to memory
+- `C@`: Fetch character (byte)
+- `C!`: Store character (byte)
+
+### Control Flow
+- `IF`: Conditional branch
+- `THEN`: End conditional
+- `DO`: Start loop
+- `LOOP`: End loop
+- `+LOOP`: Loop with increment
+- `CALL`: Call subroutine
+- `RETURN`: Return from subroutine
+
+### I/O & Peripherals
+- `EMIT`: Send character to output
+- `KEY`: Read character from input
+- `SPI`: SPI communication
+- `UART`: UART communication
+
+## Pin Assignment (ULX3S)
+
+*To be defined based on ULX3S schematic*
+
+### FPGA Pins
+- Data/Address bus
+- Clock (if used)
+- Reset
+- Status LEDs
+
+### Connections to ESP32
+- UART TX/RX
+- SPI MOSI/MISO/CLK/CS
+- GPIO for control signals
+
+## Implementation Approach
+
+### Phase 1: Foundation
+1. Stack modules with asynchronous push/pop
+2. Basic arithmetic primitives
+3. Simple instruction sequencing
+
+### Phase 2: Memory & Control
+1. RAM controller
+2. Instruction memory
+3. Control flow primitives
+
+### Phase 3: I/O & Integration
+1. UART interface
+2. SPI interface
+3. ESP32 communication
+
+### Phase 4: Testing & Optimization
+1. Comprehensive test suite
+2. Performance optimization
+3. Power analysis
+
+## Design Considerations
+
+### Asynchronous Design Challenges
+- Metastability handling
+- Handshake protocol implementation
+- Timing verification
+
+### FPGA Resources (ECP5)
+- LUTs: Available for logic
+- Block RAM: For stack and instruction storage
+- DSP Blocks: Optional for arithmetic
+- I/O:  UART, SPI, GPIO
+
+### Timing
+- Combinatorial paths must be short
+- Pipeline stages to break long paths
+- Ready/valid protocol for synchronization
+
+## References
+
+- Forth standards (ANSI Forth)
+- ULX3S documentation
+- Lattice ECP5 FPGA documentation
+- Asynchronous design practices
